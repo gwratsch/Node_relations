@@ -1,0 +1,9 @@
+
+.clickinfo{
+    color: red;
+}
+#formRequest textarea{
+    width: 100%;
+    min-width: 150px;
+    height: 50px;
+}

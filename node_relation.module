@@ -1,0 +1,175 @@
+<?php
+
+function node_relation_build_relation($nid){
+    $query = db_select('node', 'n') ;            
+    $query->fields('n', array('nid','title'));
+    $query->orderBy('nid', 'ASC');
+    $result = $query->execute();
+    $node_list =  $result->fetchAll();
+
+    foreach ($node_list as $naam){
+        $node_orderedlist[$naam->nid]=$naam->title;
+    }
+    reset($node_orderedlist);
+    
+    $node = node_load($nid);
+    $language = $node->language;
+    $language = key($node->body);
+    $body_text='';
+    if($language !==''){
+        $body_text = $node->body[$language]['0']['value'];
+    }    
+    
+    db_delete('relations')
+      ->condition('nid', $nid,'=')
+      ->execute();
+    
+    foreach ($node_orderedlist as $node_id => $title){
+        $positie = strpos($body_text ,$title );
+        if ($positie !== FALSE && ($nid !== $node_id)){
+            db_insert('relations')
+            ->fields(array(
+              'nid' => $nid,
+              'title' => $title,
+              'node_id' =>  $node_id
+            ))
+            ->execute();
+        }
+    }
+}
+
+/**
+ * Automaticly creating block when installing the module
+ */
+function node_relation_block_info() {
+
+  $blocks['node_relation'] = array(
+    'info' => t('Node relation'),
+    'status' => FALSE,
+    'visibility'=> BLOCK_VISIBILITY_PHP
+  );
+  $blocks['node_sub_relation'] = array(
+    'info' => t('Node Sub relation'),
+    'status' => FALSE,
+      'visibility'=> BLOCK_VISIBILITY_PHP
+  );
+  return $blocks;
+}
+function node_relation_block_configure($delta = '') {
+  $form = array();
+  if ($delta == 'node_relation') {
+    $form['node_relation'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Node relations'),
+      '#size' => 60,
+      '#default_value' => variable_get('node_relation', t('Node relation.')),
+    );
+  }
+    if ($delta == 'node_sub_relation') {
+    $form['node_sub_relation'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Node Sub relations'),
+      '#size' => 60,
+      '#default_value' => variable_get('node_sub_relation', t('Node sub relation.')),
+    );
+  }
+  return $form;
+}
+function node_relation_block_view($delta = '') {
+
+  $block = array();
+  switch ($delta) {
+    case 'node_relation':
+      $block['subject'] = t('Node relation');
+        $content = node_relation_node_retreave_relation(menu_get_object());
+      if($content != ''){
+      $block['content'] = $content;
+      }else{
+          $block['content'] = t('No content available for node_relation.');
+      }
+      break;
+    case 'node_sub_relation':
+      $block['subject'] = t('Node sub relation');
+        $content = node_relation_node_sub_relation(menu_get_object());
+      if($content !=''){
+      $block['content'] = $content;
+      }else{
+          $block['content'] = t('No content available for node_relation.');
+      }
+      break;
+  }
+  return $block;
+}
+function node_relation_block_save($delta = '', $edit = array()) {
+
+  if ($delta == 'node_relation') {
+    variable_set('node_relation', $edit['node_relation']);
+  }
+  if ($delta == 'node_sub_relation') {
+    variable_set('node_sub_relation', $edit['node_sub_relation']);
+  }
+}
+
+/**
+ * This function is used to display the relations in a block.
+ */
+function node_relation_node_retreave_relation($nid){
+    $isObject = false;
+    if(is_object($nid)){$nid = $nid->nid;$isObject = true;}
+    if ($nid > 0 ){
+        $node_list= array();
+        $query = db_select('relations', 'n') ;            
+        $query->fields('n', array('title','node_id'));
+        $query->condition('nid', $nid , '=');
+        $query->orderBy('title', 'ASC');
+        $result = $query->execute();
+        $node_list =  $result->fetchAll();
+        $displayInfo = node_relation_buildhtmlTable($node_list);
+        if($isObject == false){
+            echo $displayInfo;
+        }else{
+            return $displayInfo;
+        }
+    }
+}
+
+/**
+ * This function is used to display sub relations in a block.
+ */
+function node_relation_node_sub_relation($nid){ 
+    $isObject = false;
+    if(is_object($nid)){$nid = $nid->nid;$isObject = true;}
+    if ($nid > 0 ){
+        $node_list= array();
+        $query = db_select('node', 'n') ;  
+        $query->addField('n', 'title','title');
+        $query->addField('n', 'nid','node_id');
+        $query->join('relations', 'm', 'n.nid = m.nid');
+        $query->condition('m.node_id', $nid , '=');
+        $query->orderBy('n.title', 'ASC');
+        $result = $query->execute();
+        $node_list =  $result->fetchAll();
+        $displayInfo = node_relation_buildhtmlTable($node_list);
+        if($isObject == false){
+            echo $displayInfo;
+        }else{
+            return $displayInfo;
+        }
+    }
+}
+
+function node_relation_buildhtmlTable($node_list){
+    $display_text = '<div class="content"><table style="width:100%">';
+    node_relation_buildhtmlTableRows($node_list, $display_text);
+    $display_text .= '</table></div>';
+    return $display_text;
+}
+
+function node_relation_buildhtmlTableRows($node_list,&$display_text){
+    foreach($node_list as $row){
+        $title = $row->title;
+        $node_id = $row->node_id;
+        $link_text = "<a href='/node/".$node_id."'>".$title."</a>";
+        $display_text .= '<tr><td>'.$link_text.'</td></tr>';
+    }
+}

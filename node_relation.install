@@ -1,0 +1,24 @@
+<?php
+
+function node_relation_schema() {
+  $schema['relations'] = array(
+    'description' => 'Table with automatic created links with other nodes.',
+    'fields' => array(
+      'nid' => array(
+        'description' => 'The primary id the node.',
+        'type' => 'int',
+        'not null' => TRUE),
+      'title' => array(
+        'description' => 'The title of linked node.',
+        'type' => 'text',
+        'size' => 'big',
+        'not null' => TRUE),
+      'node_id' => array(
+        'description' => 'Nid of the linked node.',
+        'type' => 'int',
+        'not null' => TRUE),
+      ),
+  );
+
+  return $schema;
+}

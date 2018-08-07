@@ -1,4 +1,4 @@
-# Node_relations
+Node Relation module
 
 Drupal 7 module.
 

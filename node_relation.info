@@ -1,0 +1,13 @@
+name = node_relation module
+description = node_relation  module
+package = node_relation module
+core = 7.x
+
+dependencies[] = rules
+
+files[] = node_relation.module
+files[] = node_relation.install
+files[] = node_relation.rules_defaults.inc
+
+; Always available CSS
+stylesheets[all][] = node_relation.css
